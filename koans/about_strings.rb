@@ -3,36 +3,36 @@ require File.expand_path(File.dirname(__FILE__) + '/neo')
 class AboutStrings < Neo::Koan
   def test_double_quoted_strings_are_strings
     string = "Hello, World"
-    assert_equal __, string.is_a?(String)
+    assert_equal true, string.is_a?(String)
   end
 
   def test_single_quoted_strings_are_also_strings
     string = 'Goodbye, World'
-    assert_equal __, string.is_a?(String)
+    assert_equal true, string.is_a?(String)
   end
 
   def test_use_single_quotes_to_create_string_with_double_quotes
     string = 'He said, "Go Away."'
-    assert_equal __, string
+    assert_equal 'He said, "Go Away."', string
   end
 
   def test_use_double_quotes_to_create_strings_with_single_quotes
     string = "Don't"
-    assert_equal __, string
+    assert_equal "Don't", string
   end
 
   def test_use_backslash_for_those_hard_cases
     a = "He said, \"Don't\""
     b = 'He said, "Don\'t"'
-    assert_equal __, a == b
+    assert_equal true, a == b
   end
 
   def test_use_flexible_quoting_to_handle_really_hard_cases
     a = %(flexible quotes can handle both ' and " characters)
     b = %!flexible quotes can handle both ' and " characters!
     c = %{flexible quotes can handle both ' and " characters}
-    assert_equal __, a == b
-    assert_equal __, a == c
+    assert_equal true, a == b
+    assert_equal true, a == c
   end
 
   def test_flexible_quotes_can_handle_multiple_lines
@@ -40,9 +40,11 @@ class AboutStrings < Neo::Koan
 It was the best of times,
 It was the worst of times.
 }
-    assert_equal __, long_string.length
-    assert_equal __, long_string.lines.count
-    assert_equal __, long_string[0,1]
+    assert_equal 54, long_string.length
+    # First line is a newline character
+    assert_equal 3, long_string.lines.count
+    # Double quotes must be used to escape newline character
+    assert_equal "\n", long_string[0,1]
   end
 
   def test_here_documents_can_also_handle_multiple_lines
@@ -50,29 +52,30 @@ It was the worst of times.
 It was the best of times,
 It was the worst of times.
 EOS
-    assert_equal __, long_string.length
-    assert_equal __, long_string.lines.count
-    assert_equal __, long_string[0,1]
+    # First line of a heredoc (https://en.wikipedia.org/wiki/Here_document) is the line after the identifier
+    assert_equal 53, long_string.length
+    assert_equal 2, long_string.lines.count
+    assert_equal 'I', long_string[0,1]
   end
 
   def test_plus_will_concatenate_two_strings
     string = "Hello, " + "World"
-    assert_equal __, string
+    assert_equal "Hello, World", string
   end
 
   def test_plus_concatenation_will_leave_the_original_strings_unmodified
     hi = "Hello, "
     there = "World"
     string = hi + there
-    assert_equal __, hi
-    assert_equal __, there
+    assert_equal "Hello, ", hi
+    assert_equal "World", there
   end
 
   def test_plus_equals_will_concatenate_to_the_end_of_a_string
     hi = "Hello, "
     there = "World"
     hi += there
-    assert_equal __, hi
+    assert_equal "Hello, World", hi
   end
 
   def test_plus_equals_also_will_leave_the_original_string_unmodified
@@ -80,15 +83,19 @@ EOS
     hi = original_string
     there = "World"
     hi += there
-    assert_equal __, original_string
+    assert_equal "Hello, ", original_string
+    assert_equal "Hello, World", hi
+    assert_equal "World", there
+    # It would appear that hi is getting reassigned the value "Hello, World", 
+    # with the reassignment being the reason why the orignal string is not modified.
   end
 
   def test_the_shovel_operator_will_also_append_content_to_a_string
     hi = "Hello, "
     there = "World"
     hi << there
-    assert_equal __, hi
-    assert_equal __, there
+    assert_equal "Hello, World", hi
+    assert_equal "World", there
   end
 
   def test_the_shovel_operator_modifies_the_original_string
@@ -96,86 +103,101 @@ EOS
     hi = original_string
     there = "World"
     hi << there
-    assert_equal __, original_string
+    assert_equal "Hello, World", original_string
 
     # THINK ABOUT IT:
     #
     # Ruby programmers tend to favor the shovel operator (<<) over the
     # plus equals operator (+=) when building up strings.  Why?
+    # 
+    # I suppose there's no reason to keep the original value when building up strings.
+    # Apparently its faster because it modifies the reciever in place.
   end
 
   def test_double_quoted_string_interpret_escape_characters
     string = "\n"
-    assert_equal __, string.size
+    assert_equal 1, string.size
   end
 
   def test_single_quoted_string_do_not_interpret_escape_characters
     string = '\n'
-    assert_equal __, string.size
+    assert_equal 2, string.size
   end
 
   def test_single_quotes_sometimes_interpret_escape_characters
     string = '\\\''
-    assert_equal __, string.size
-    assert_equal __, string
+    assert_equal 2, string.size
+    assert_equal %{\\'}, string
+    # This is tricky to express clearly because escape characters still work in flexible quotes, 
+    # but the string 2 characters, a backslash and single quote.
   end
 
   def test_double_quoted_strings_interpolate_variables
     value = 123
     string = "The value is #{value}"
-    assert_equal __, string
+    assert_equal "The value is 123", string
   end
 
   def test_single_quoted_strings_do_not_interpolate
     value = 123
     string = 'The value is #{value}'
-    assert_equal __, string
+    assert_equal 'The value is #{value}', string
+    # Again this is hard to express because any other quotes won't quite work but the string is what you see
   end
 
   def test_any_ruby_expression_may_be_interpolated
     string = "The square root of 5 is #{Math.sqrt(5)}"
-    assert_equal __, string
+    assert_equal "The square root of 5 is 2.23606797749979", string
+    # Doesn't feel like the best test case because the actual string is dependent on whatever the default formatting is
   end
 
   def test_you_can_get_a_substring_from_a_string
     string = "Bacon, lettuce and tomato"
-    assert_equal __, string[7,3]
-    assert_equal __, string[7..9]
+    # 3 characters from position 7
+    assert_equal "let", string[7,3]
+    # Characters from position 7 to 9 inclusive
+    assert_equal "let", string[7..9]
   end
 
   def test_you_can_get_a_single_character_from_a_string
     string = "Bacon, lettuce and tomato"
-    assert_equal __, string[1]
+    assert_equal "a", string[1]
 
     # Surprised?
+    # No? What was the surprise? Zero-based indexing?
   end
 
   in_ruby_version("1.8") do
     def test_in_older_ruby_single_characters_are_represented_by_integers
-      assert_equal __, ?a
-      assert_equal __, ?a == 97
+      assert_equal 97, ?a
+      assert_equal true, ?a == 97
 
-      assert_equal __, ?b == (?a + 1)
+      assert_equal true, ?b == (?a + 1)
+
+      assert_equal "a", ?a
+      assert_equal "b", ?a + 1
     end
   end
 
   in_ruby_version("1.9", "2", "3") do
     def test_in_modern_ruby_single_characters_are_represented_by_strings
-      assert_equal __, ?a
-      assert_equal __, ?a == 97
+      assert_equal "a", ?a
+      assert_equal false, ?a == 97
+
+      # This seems like a very niche feature, especially if they aren't represented as integers anymore
     end
   end
 
   def test_strings_can_be_split
     string = "Sausage Egg Cheese"
     words = string.split
-    assert_equal [__, __, __], words
+    assert_equal ["Sausage", "Egg", "Cheese"], words
   end
 
   def test_strings_can_be_split_with_different_patterns
     string = "the:rain:in:spain"
     words = string.split(/:/)
-    assert_equal [__, __, __, __], words
+    assert_equal ["the", "rain", "in", "spain"], words
 
     # NOTE: Patterns are formed from Regular Expressions.  Ruby has a
     # very powerful Regular Expression library.  We will become
@@ -184,14 +206,17 @@ EOS
 
   def test_strings_can_be_joined
     words = ["Now", "is", "the", "time"]
-    assert_equal __, words.join(" ")
+    assert_equal "Now is the time", words.join(" ")
   end
 
   def test_strings_are_unique_objects
     a = "a string"
     b = "a string"
 
-    assert_equal __, a           == b
-    assert_equal __, a.object_id == b.object_id
+    assert_equal true, a           == b
+    assert_equal false, a.object_id == b.object_id
+
+    c = a
+    assert_equal true, c.object_id == a.object_id
   end
 end
