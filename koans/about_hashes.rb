@@ -98,11 +98,11 @@ class AboutHashes < Neo::Koan
 
     hash[:one] << "uno"
     hash[:two] << "dos"
+    # No assignment is going on here, so the values are just being added to the default object instead of adding keys.
 
     assert_equal ["uno", "dos"], hash[:one]
     assert_equal ["uno", "dos"], hash[:two]
     assert_equal ["uno", "dos"], hash[:three]
-    # I'm very confused here
 
     assert_equal true, hash[:one].object_id == hash[:two].object_id
   end
@@ -112,19 +112,20 @@ class AboutHashes < Neo::Koan
 
     hash[:one] << "uno"
     hash[:two] << "dos"
+    # code in block is run to assign an empty array to the key does not exist
 
-    assert_equal __, hash[:one]
-    assert_equal __, hash[:two]
-    assert_equal __, hash[:three]
+    assert_equal ["uno"], hash[:one]
+    assert_equal ["dos"], hash[:two]
+    assert_equal [], hash[:three]
   end
 
   def test_default_value_attribute
     hash = Hash.new
 
-    assert_equal __, hash[:some_key]
+    assert_equal nil, hash[:some_key]
 
     hash.default = 'peanut'
 
-    assert_equal __, hash[:some_key]
+    assert_equal 'peanut', hash[:some_key]
   end
 end
